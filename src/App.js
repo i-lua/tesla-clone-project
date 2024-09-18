@@ -1,57 +1,86 @@
-import React from 'react';
-import logo from './logo.svg';
-import { Counter } from './features/counter/Counter';
-import './App.css';
+import React, { useEffect } from "react";
+import "./App.css";
+import Header from "./Header";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+} from "react-router-dom";
+import { useState } from "react";
+import Menu from "./Menu.js";
+import HeaderBlock from "./HeaderBlock.js";
+import Login from "./Login.js";
+import { useDispatch, useSelector } from "react-redux";
+import { login, logout, selectUser } from "./features/userSlice.js";
+import Signup from "./Signup.js";
+import TeslaAccount from "./TeslaAccount.js";
+import { auth } from "./firebase.js";
 
 function App() {
+  const user = useSelector(selectUser);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    auth.onAuthStateChanged((userAuth) => {
+      if (userAuth) {
+        // User is signed in
+        dispatch(
+          login({
+            email: userAuth.email,
+            uid: userAuth.uid,
+            displayName: userAuth.displayName,
+          })
+        );
+      } else {
+        // User is signed out
+        dispatch(logout());
+      }
+    });
+  }, [dispatch]);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <Counter />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <span>
-          <span>Learn </span>
-          <a
-            className="App-link"
-            href="https://reactjs.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            React
-          </a>
-          <span>, </span>
-          <a
-            className="App-link"
-            href="https://redux.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Redux
-          </a>
-          <span>, </span>
-          <a
-            className="App-link"
-            href="https://redux-toolkit.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Redux Toolkit
-          </a>
-          ,<span> and </span>
-          <a
-            className="App-link"
-            href="https://react-redux.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            React Redux
-          </a>
-        </span>
-      </header>
-    </div>
+    <Router>
+      <div className="app">
+        <Routes>
+          <Route
+            exact
+            path="/"
+            element={
+              <>
+                <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
+                {isMenuOpen && <Menu />}
+                <HeaderBlock />
+              </>
+            }
+          />
+          <Route exact path="/login" element={<Login />} />
+          <Route
+            path="/login"
+            element={user ? <Navigate to="/teslaaccount" /> : <Login />}
+          ></Route>
+          <Route exact path="/signup" element={<Signup />} />
+          <Route
+            exact
+            path="/teslaaccount"
+            element={
+              !user ? (
+                <Navigate to="/login" />
+              ) : (
+                <>
+                  <TeslaAccount
+                    isMenuOpen={isMenuOpen}
+                    setIsMenuOpen={setIsMenuOpen}
+                  />{" "}
+                  {isMenuOpen && <Menu />}
+                </>
+              )
+            }
+          ></Route>
+        </Routes>
+      </div>
+    </Router>
   );
 }
 
